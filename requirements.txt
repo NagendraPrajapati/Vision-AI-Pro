@@ -1,4 +1,6 @@
 ﻿Flask
-ultralytics
+onnxruntime
+numpy
+Pillow
 reportlab
 gunicorn

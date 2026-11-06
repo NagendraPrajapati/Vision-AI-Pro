@@ -1,0 +1,283 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionAI Pro | Smart Image Analysis</title>
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <aside class="sidebar">
+        <div class="logo">
+            <span class="logo-icon">V</span>
+            <span>VISION<span class="cyan">AI</span></span>
+        </div>
+
+        <p class="menu-title">MAIN MENU</p>
+
+        <nav>
+            <a href="/" class="nav-link active">▦ Dashboard</a>
+            <a href="#analysis" class="nav-link">◈ Image Analysis</a>
+            <a href="#results" class="nav-link">◎ Results</a>
+            <a href="/history" class="nav-link">◷ History</a>
+            <a href="#analytics" class="nav-link">▥ Analytics</a>
+            <a href="#about" class="nav-link">ⓘ About</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <button id="themeToggle" class="theme-button">
+                ☀ Light Mode
+            </button>
+            <p>VisionAI Pro v2.0</p>
+            <p>AI Image Intelligence</p>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">ARTIFICIAL INTELLIGENCE PLATFORM</p>
+                <h1>VisionAI Dashboard</h1>
+                <p class="subtitle">Discover objects. Understand images.</p>
+            </div>
+
+            <div class="status">
+                <span class="status-dot"></span>
+                AI System Ready
+            </div>
+        </header>
+
+        <!-- Statistics -->
+        <section class="stats-grid">
+
+            <div class="stat-card">
+                <span>◈</span>
+                <p>DETECTED OBJECTS</p>
+                <h2>{{ objects|length }}</h2>
+                <small>Objects in current image</small>
+            </div>
+
+            <div class="stat-card">
+                <span>◎</span>
+                <p>UNIQUE CATEGORIES</p>
+                <h2>{{ objects|map(attribute='name')|unique|list|length }}</h2>
+                <small>Different object classes</small>
+            </div>
+
+            <div class="stat-card">
+                <span>✧</span>
+                <p>AVERAGE CONFIDENCE</p>
+                <h2>
+                    {% if objects %}
+                    {{ (objects|sum(attribute='confidence') / objects|length)|round(1) }}%
+                    {% else %}
+                    --
+                    {% endif %}
+                </h2>
+                <small>AI prediction confidence</small>
+            </div>
+
+            <div class="stat-card">
+                <span>◷</span>
+                <p>SYSTEM STATUS</p>
+                <h2 class="ready-text">READY</h2>
+                <small>YOLO AI Model</small>
+            </div>
+
+        </section>
+
+        <!-- Image Analysis -->
+        <section class="analysis-grid" id="analysis">
+
+            <div class="panel upload-panel">
+
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">INPUT IMAGE</p>
+                        <h2>Upload Image</h2>
+                    </div>
+                    <span class="panel-icon">↥</span>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data"
+                      id="uploadForm">
+
+                    <label for="imageInput" class="upload-area">
+                        <div class="upload-icon">⇧</div>
+                        <h3>Choose an Image</h3>
+                        <p>Click here to browse your files</p>
+                        <small>JPG, PNG, JPEG, WEBP · Max 10 MB</small>
+                        <img id="preview" alt="Image preview">
+                        <span id="fileName"></span>
+                    </label>
+
+                    <input type="file" name="image" id="imageInput"
+                           accept=".jpg,.jpeg,.png,.webp" required>
+
+                    <!-- Confidence Control -->
+                    <div class="confidence-control">
+                        <label for="confidenceSlider">
+                            Detection Confidence:
+                            <strong id="confidenceValue">15%</strong>
+                        </label>
+
+                        <input type="range"
+                               id="confidenceSlider"
+                               name="confidence"
+                               min="5" max="90" value="15" step="5">
+                    </div>
+
+                    <button type="submit" class="analyze-button"
+                            id="analyzeButton">
+                        ✦ Analyze Image
+                    </button>
+
+                </form>
+
+                {% if error %}
+                <p class="error">{{ error }}</p>
+                {% endif %}
+
+            </div>
+
+            <!-- Detection Preview -->
+            <div class="panel result-panel" id="results">
+
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">AI VISUALIZATION</p>
+                        <h2>Detection Preview</h2>
+                    </div>
+                    <span class="live-label">● AI RESULT</span>
+                </div>
+
+                {% if result_image %}
+                <img class="result-image"
+                     src="{{ url_for('static', filename=result_image) }}"
+                     alt="AI detection result">
+                {% else %}
+                <div class="empty-preview">
+                    <div class="scan-icon">⌗</div>
+                    <h3>Waiting for Image</h3>
+                    <p>Your AI detection result will appear here.</p>
+                </div>
+                {% endif %}
+
+            </div>
+
+        </section>
+
+        <!-- Identified Objects -->
+        <section class="panel object-panel">
+
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">DETECTION INFORMATION</p>
+                    <h2>Identified Objects</h2>
+                </div>
+
+                <span class="count-badge">
+                    {{ objects|length }} Objects
+                </span>
+            </div>
+
+            <div class="object-tools">
+                <input type="search"
+                       id="objectSearch"
+                       placeholder="Search detected objects...">
+
+                <button type="button" id="voiceButton">
+                   🔊 हिंदी में सुनें
+                </button>
+                <button type="button" id="stopVoiceButton">
+        ⏹ Stop
+    </button>
+            </div>
+
+            {% if objects %}
+            <div class="object-list" id="objectList">
+
+                {% for obj in objects %}
+                <div class="object-row"
+                     data-object="{{ obj.name|lower }}">
+
+                    <div>
+                        <strong>{{ obj.name|title }}</strong>
+                        <small>AI detected object</small>
+                    </div>
+
+                    <div class="confidence">
+                        {{ obj.confidence }}%
+
+                        <div class="confidence-track">
+                            <div class="confidence-fill"
+                                 style="width: {{ obj.confidence | float }}%;"
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button"
+                            class="info-button"
+                            data-name="{{ obj.name }}">
+                        More Info
+                    </button>
+
+                </div>
+                {% endfor %}
+
+            </div>
+            {% else %}
+            <div class="empty-list">
+                No detection data available. Upload an image to begin.
+            </div>
+            {% endif %}
+
+            <div id="objectInfo" class="object-info">
+                Select an object to learn more about it.
+            </div>
+
+            {% if scan_id %}
+            <a class="analyze-button"
+               href="{{ url_for('download_report', scan_id=scan_id) }}">
+                Download PDF Report
+            </a>
+            {% endif %}
+
+        </section>
+
+        <!-- Analytics -->
+        <section class="panel" id="analytics">
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">DATA INSIGHTS</p>
+                    <h2>Object Analytics</h2>
+                </div>
+            </div>
+
+            <div id="analyticsChart"
+                 class="analytics-chart"
+                 data-objects='{{ objects|tojson }}'>
+                <p>Upload an image to view category analytics.</p>
+            </div>
+        </section>
+
+        <footer id="about">
+            <p>VISIONAI PRO © 2026 | Powered by Computer Vision & YOLO</p>
+            <p>Intelligent Image Analysis System</p>
+        </footer>
+
+    </main>
+</div>
+
+</body>
+</html>
